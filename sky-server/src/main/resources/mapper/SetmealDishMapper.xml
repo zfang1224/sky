@@ -5,7 +5,6 @@
 <!-- namespace等于mapper接口类的权限定符 -->
 <mapper namespace="com.sky.mapper.SetmealDishMapper">
 
-
     <select id="getSetmealIdByDishId" resultType="java.lang.Long">
         select setmeal_id from setmeal_dish
         where dish_id in
@@ -13,4 +12,27 @@
             #{dishId}
         </foreach>
     </select>
+    <select id="selectListBySetmealId" resultType="setmealDish">
+        select id, setmeal_id, dish_id, name, price, copies
+        from setmeal_dish
+        where setmeal_id = #{setmealId}
+    </select>
+
+    <insert id="insertBatch">
+        insert into setmeal_dish
+        (setmeal_id, dish_id, name, price, copies)
+        values
+        <foreach collection="setmealDishes" item="s" separator=",">
+            (#{s.setmealId}, #{s.dishId}, #{s.name}, #{s.price}, #{s.copies})
+        </foreach>
+    </insert>
+    
+    <delete id="deleteBatch">
+        delete from setmeal_dish
+        where setmeal_id in
+        <foreach collection="ids" open="(" separator="," close=")" item="id">
+            #{id}
+        </foreach>
+    </delete>
+    
 </mapper>
