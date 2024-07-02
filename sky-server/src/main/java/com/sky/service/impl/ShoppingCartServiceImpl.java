@@ -91,6 +91,32 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
         return list;
     }
+
+    // 清空购物车
+    public void clean() {
+        // 获取当前微信用户的id
+        Long userId = BaseContext.getCurrentId();
+        shoppingCartMapper.deleteByUserId(userId);
+    }
+
+    // 删除购物车中的一个商品
+    public void removeOne(ShoppingCartDTO shoppingCartDTO) {
+        Long userId = BaseContext.getCurrentId();
+        ShoppingCart shoppingCart = new ShoppingCart();
+        BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
+        shoppingCart.setUserId(userId);
+
+        // 如果购物车中存在超过1个商品，更新商品数-1
+        shoppingCart =  shoppingCartMapper.selectOne(shoppingCart);
+        if (shoppingCart.getNumber() > 1) {
+            shoppingCart.setNumber(shoppingCart.getNumber() - 1);
+            shoppingCartMapper.updateNumberById(shoppingCart);
+        } else {
+            // 购物车中只有一个商品，删除该商品
+            shoppingCartMapper.deleteOne(shoppingCart);
+        }
+
+    }
 }
 
 

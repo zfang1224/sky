@@ -13,4 +13,8 @@ public interface ShoppingCartService {
     // 查看购物车
     List<ShoppingCart> shoppingCartList();
 
+    // 清空购物车
+    void clean();
+
+    void removeOne(ShoppingCartDTO shoppingCartDTO);
 }
