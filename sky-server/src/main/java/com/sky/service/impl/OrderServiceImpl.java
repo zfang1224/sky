@@ -251,13 +251,37 @@ public class OrderServiceImpl implements OrderService {
         Page<OrderVO> page = orderMapper.selectList(ordersPageQueryDTO);
 
         PageResult result = new PageResult();
-        result.setTotal(page.getTotal());
-        result.setRecords(page.getResult());
 
+        List<OrderVO> res = page.getResult();
+        for (OrderVO re : res) {
+            Long orderId = re.getId();
+            String ordersDishName = getOrdersDish(orderId);
+            re.setOrderDishes(ordersDishName);
+        }
+
+        result.setTotal(page.getTotal());
+        result.setRecords(res);
 
 
         return result;
     }
+
+    public String getOrdersDish(Long id) {
+        List<OrderDetail> orderDetailList = orderDetailMapper.selectListByOrderId(id);
+        StringBuilder builder = new StringBuilder();
+        for (OrderDetail orderDetail : orderDetailList) {
+            String t = null;
+            if (orderDetail.getDishFlavor() != null) {
+                t = "(" + orderDetail.getName() + "*" + orderDetail.getNumber()
+                        + orderDetail.getDishFlavor() + ")";
+            } else {
+                t = "(" + orderDetail.getName() + "*" + orderDetail.getNumber() + ")";
+            }
+            builder.append(t);
+        }
+        return builder.toString();
+    }
+
 
     @Override
     public OrderStatisticsVO statistic() {
