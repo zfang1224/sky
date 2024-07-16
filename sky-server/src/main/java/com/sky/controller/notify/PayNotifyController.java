@@ -3,6 +3,7 @@ package com.sky.controller.notify;
 import com.alibaba.druid.support.json.JSONUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.sky.entity.Orders;
 import com.sky.properties.WeChatProperties;
 import com.sky.service.OrderService;
 import com.wechat.pay.contrib.apache.httpclient.util.AesUtil;
@@ -37,6 +38,7 @@ public class PayNotifyController {
      */
     @RequestMapping("/paySuccess")
     public void paySuccessNotify(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        log.info("回调...");
         //读取数据
 //        String body = readData(request);
 //        log.info("支付成功回调：{}", body);
@@ -51,9 +53,12 @@ public class PayNotifyController {
 //
 //        log.info("商户平台订单号：{}", outTradeNo);
 //        log.info("微信支付交易号：{}", transactionId);
-//
-//        //业务处理，修改订单状态、来单提醒
-//        orderService.paySuccess(outTradeNo);
+
+        //业务处理，修改订单状态、来单提醒
+
+        Orders orders = orderService.getLastOrder();
+
+        orderService.paySuccess(orders.getNumber());
 
         //给微信响应
         responseToWeixin(response);

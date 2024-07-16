@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -18,6 +19,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import io.swagger.models.auth.In;
 import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.BeanUtils;
@@ -49,6 +51,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private WeChatPayUtil weChatPayUtil;
 
+    @Autowired
+    private WebSocketServer webSocketServer;
+
     // 用户下单
     @Transactional
     public OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO) {
@@ -69,12 +74,20 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 2. 向订单表插入一条数据
+
+        AddressBook address = addressBookMapper.getById(ordersSubmitDTO.getAddressBookId());
+
         Orders orders = new Orders();
+
+
         BeanUtils.copyProperties(ordersSubmitDTO, orders);
         orders.setOrderTime(LocalDateTime.now());
         orders.setPayStatus(Orders.UN_PAID);
         orders.setStatus(Orders.PENDING_PAYMENT);
         orders.setNumber(String.valueOf(System.currentTimeMillis()));
+
+        orders.setAddressBookId(ordersSubmitDTO.getAddressBookId());
+        orders.setAddress(address.getProvinceName() + address.getCityName() + address.getDistrictName() + address.getDetail());
 
         orders.setPhone(addressBook.getPhone());
         orders.setConsignee(addressBook.getConsignee());
@@ -90,7 +103,7 @@ public class OrderServiceImpl implements OrderService {
             BeanUtils.copyProperties(cart, orderDetail);
             // 主键回显
             orderDetail.setOrderId(orders.getId()); // 设置当前订单明细对应的订单id
-
+            orderDetail.setNumber(cart.getNumber());
             orderDetailList.add(orderDetail);
         }
         orderDetailMapper.insertBatch(orderDetailList);
@@ -125,19 +138,17 @@ public class OrderServiceImpl implements OrderService {
 //                user.getOpenid() //微信用户的openid
 //        );
 
-        //模拟
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("code", "ORDERPAID");
 
-//        if (jsonObject.getString("code") != null && jsonObject.getString("code").equals("ORDERPAID")) {
-//            throw new OrderBusinessException("该订单已支付");
-//        }
+        if (jsonObject.getString("code") != null && jsonObject.getString("code").equals("ORDERPAID")) {
+            throw new OrderBusinessException("该订单已支付");
+        }
 
-        jsonObject.put("package", "vx" + System.currentTimeMillis());
+        long l = System.currentTimeMillis();
+        jsonObject.put("package", "vx" + l);
 
         OrderPaymentVO vo = jsonObject.toJavaObject(OrderPaymentVO.class);
         vo.setPackageStr(jsonObject.getString("package"));
-
         return vo;
     }
 
@@ -160,6 +171,17 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+
+        // 通过websocket向客户端浏览器发送消息：type，orderId，content
+        Map map = new HashMap();
+        map.put("type", 1); // 1 来单提醒 2催单
+        map.put("orderId", ordersDB.getId());
+        map.put("content", "订单号：" + outTradeNo);
+
+        String json = JSON.toJSONString(map);
+
+        webSocketServer.sendToAllClient(json);
+
     }
 
     // 历史订单
@@ -338,6 +360,30 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+    }
+
+    @Override
+    public Orders getLastOrder() {
+        Orders orders = orderMapper.selectLastOrder();
+        return orders;
+    }
+
+    // 客户催单
+    public void reminder(Long id) {
+        // 根据id查询订单
+        Orders orders = orderMapper.getById(id);
+        // 校验订单是否存在
+        if (orders == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        Map map = new HashMap();
+        map.put("type", 2); // 1 来单提醒；2 催单
+        map.put("id", id);
+        map.put("content", "订单号：" + orders.getNumber());
+
+        // 通过websocket发动推送信息
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
 
 }

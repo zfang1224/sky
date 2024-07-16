@@ -4,10 +4,10 @@
 
     <insert id="insertBatch">
         insert into sky_take_out.order_detail
-        (name, image, order_id, dish_id, setmeal_id, dish_flavor, amount)
+        (name, image, order_id, dish_id, setmeal_id, dish_flavor, amount, number)
         VALUES
         <foreach collection="orderDetailList" item="od" separator=",">
-            (#{od.name}, #{od.image}, #{od.orderId}, #{od.dishId}, #{od.setmealId}, #{od.dishFlavor},#{od.amount})
+            (#{od.name}, #{od.image}, #{od.orderId}, #{od.dishId}, #{od.setmealId}, #{od.dishFlavor},#{od.amount}, #{od.number})
         </foreach>
     </insert>
 
