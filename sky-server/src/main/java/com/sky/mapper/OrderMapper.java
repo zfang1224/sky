@@ -55,4 +55,7 @@ public interface OrderMapper {
 
     @Select("select * from orders where id = #{id}")
     Orders getById(Long id);
+
+    // 统计营业额数据
+    Double sumByMap(Map map);
 }
