@@ -58,4 +58,7 @@ public interface OrderMapper {
 
     // 统计营业额数据
     Double sumByMap(Map map);
+
+    // 统计订单数量
+    Integer countByMap(Map map);
 }
