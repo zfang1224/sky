@@ -1,10 +1,12 @@
 package com.sky.service.impl;
 
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import io.swagger.models.auth.In;
@@ -175,6 +177,30 @@ public class ReportServiceImpl implements ReportService {
         map.put("status", status);
 
         return orderMapper.countByMap(map);
+    }
+
+    // 销量排名前10
+    public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+        LocalDateTime b = LocalDateTime.of(begin, LocalTime.MIN);
+        LocalDateTime e = LocalDateTime.of(end, LocalTime.MAX);
+
+        List<GoodsSalesDTO> salesTop10 = orderMapper.getSalesTop10(b, e);
+
+        List<String> nameList = new ArrayList<>();
+        List<Integer> numberList = new ArrayList<>();
+        for (GoodsSalesDTO dto : salesTop10) {
+            nameList.add(dto.getName());
+            numberList.add(dto.getNumber());
+        }
+
+        String names = StringUtils.join(nameList, ",");
+        String numbers = StringUtils.join(numberList, ",");
+
+        return SalesTop10ReportVO
+                .builder()
+                .nameList(names)
+                .numberList(numbers)
+                .build();
     }
 
 }
